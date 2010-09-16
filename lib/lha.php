@@ -152,7 +152,7 @@ class LHAExtract{
         $this->pt_code = array();
         $this->t_freq = array();
 
-        $this->buffer = array();
+        $this->buffer = " ";
 
         $this->bitbuf = 0;
         $this->subbitbuf = 0;
@@ -212,7 +212,6 @@ class LHAExtract{
             $this->bitcount = self::$CHAR_BIT;
         }
         $this->bitbuf |= logic_shift($this->subbitbuf, $this->bitcount -= $n);
-        printf("fillbuff: %x\n",$this->bitbuf);
     }
 
     private function getbits($n) {
@@ -223,9 +222,7 @@ class LHAExtract{
     }
 
     private function fwrite_crc($p, $n, $f) {
-        for($i = 0;$i<$n;$i++){
-            if (fwrite($f,chr($p[$i]), $n) < 1) throw new Exception("Unable to write");
-        }
+        if (fwrite($f,$p, $n) < 1) throw new Exception("Unable to write");
 //        while (--n >= 0) UPDATE_CRC(p[i++]);
     }
 
@@ -432,7 +429,7 @@ class LHAExtract{
             $c = $this->decode_c();
 
             if ($c <= self::$UCHAR_MAX) {
-                $this->buffer[$r] = $c;
+                $this->buffer[$r] = chr($c);
                 if (++$r == $count) return;
             } else {
                 $this->j = $c - (self::$UCHAR_MAX + 1 - self::$THRESHOLD);

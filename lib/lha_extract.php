@@ -72,14 +72,14 @@ function  lha_extract($lha){
         throw new Exception("not support method type");
         return;
     } else {
-        if ($lha->header->method != '-lh0-') decode_start();
-        while ($origsize != 0) {
+        if ($lha->header->method !== '-lh0-') decode_start();
+        while ($origsize !== 0) {
             $n = ($origsize > DICSIZ) ? DICSIZ : $origsize;
-            if ($lha->header->method != '-lh0-') {
+            if ($lha->header->method !== '-lh0-') {
                 decode($n, $buffer);
             } else {
                 $buffer = fread($arcfile, $n);
-                if( strlen($buffer) != $n) {
+                if( strlen($buffer) !== $n) {
                     throw new Exception("error");
                 }
             }
@@ -88,7 +88,7 @@ function  lha_extract($lha){
         }
     }
     if ($is_tofile) fclose($outfile);  else $outfile = null;
-//        if (($crc ^ INIT_CRC) != file_crc)
+//        if (($crc ^ INIT_CRC) !== file_crc)
 //            console.logerror("CRC error\n");
 }
 
@@ -99,7 +99,7 @@ function fillbuf($n){
     while ($n > $bitcount) {
         $bitbuf |= ($subbitbuf << ($n -= $bitcount)) & 0xFFFFFFFF;
 
-        if ($compsize != 0) {
+        if ($compsize !== 0) {
             $compsize--;  $subbitbuf = ord(fgetc($arcfile));
         } else $subbitbuf = 0;
         $bitcount = CHAR_BIT;
@@ -109,7 +109,7 @@ function fillbuf($n){
 
 function getbits($n) {
     global $bitbuf;
-    if($n == 0) {return 0;}
+    if($n === 0) {return 0;}
     $x = logic_shift($bitbuf, BITBUFSIZ - $n);
     fillbuf($n);
     return $x;
@@ -142,7 +142,7 @@ function make_table($nchar, $bitlen, $tablebits,$table) {
         $start[$i + 1] = ($start[$i] + ($count[$i] << (16 - $i))) & 0xFFFF;
     }
 
-    if ($start[17] != ((1 << 16) & 0xFFFF)) throw Exception("Bad table");
+    if ($start[17] !== ((1 << 16) & 0xFFFF)) throw Exception("Bad table");
 
     $jutbits = 16 - $tablebits;
     for ($i = 1; $i <= $tablebits; $i++) {
@@ -153,15 +153,15 @@ function make_table($nchar, $bitlen, $tablebits,$table) {
         $weight[$i] = 1 << (16 - $i);  $i++;
     }
     $i = logic_shift($start[$tablebits + 1], $jutbits);
-    if ($i != ((1 << 16) & 0xFFFF)) {
+    if ($i !== ((1 << 16) & 0xFFFF)) {
         $k = 1 << $tablebits;
-        while ($i != $k) $table[$i++] = 0;
+        while ($i !== $k) $table[$i++] = 0;
     }
 
     $avail = $nchar;
     $mask = 1 << (15 - $tablebits);
     for ($ch = 0; $ch < $nchar; $ch++) {
-        if (($len = $bitlen[$ch]) == 0) continue;
+        if (($len = $bitlen[$ch]) === 0) continue;
         $nextcode = $start[$len] + $weight[$len];
         if ($len <= $tablebits) {
             for ($i = $start[$len]; $i < $nextcode; $i++) $table[$i] = $ch;
@@ -170,8 +170,8 @@ function make_table($nchar, $bitlen, $tablebits,$table) {
             $p = &$table;
             $l = logic_shift($k, $jutbits);
             $i = $len - $tablebits;
-            while ($i != 0) {
-                if ($p[$l] == 0) {
+            while ($i !== 0) {
+                if ($p[$l] === 0) {
                     $right[$avail] = 0;
                     $left[$avail] = 0;
                     $p[$l] = $avail++;
@@ -200,7 +200,7 @@ function read_pt_len($nn, $nbit, $i_special) {
     $mask = 0;
 
     $n = getbits($nbit);
-    if ($n == 0) {
+    if ($n === 0) {
         $c = getbits($nbit);
         for ($i = 0; $i < $nn; $i++) $pt_len[$i] = 0;
         for ($i = 0; $i < 256; $i++) $pt_table[$i] = $c;
@@ -208,7 +208,7 @@ function read_pt_len($nn, $nbit, $i_special) {
         $i = 0;
         while ($i < $n) {
             $c = logic_shift($bitbuf,BITBUFSIZ - 3);
-            if ($c == 7) {
+            if ($c === 7) {
                 $mask = 1 << (BITBUFSIZ - 1 - 3);
                 while ($mask & $bitbuf) {
                     $mask = logic_shift($mask,1);
@@ -217,7 +217,7 @@ function read_pt_len($nn, $nbit, $i_special) {
             }
             fillbuf(($c < 7) ? 3 : $c - 3);
             $pt_len[$i++] = $c;
-            if ($i == $i_special) {
+            if ($i === $i_special) {
                 $c = getbits(2);
                 while (--$c >= 0) $pt_len[$i++] = 0;
             }
@@ -235,7 +235,7 @@ function read_c_len() {
     $mask = 0;
 
     $n = getbits(CBIT);
-    if ($n == 0) {
+    if ($n === 0) {
         $c = getbits(CBIT);
         for ($i = 0; $i < NC; $i++) $c_len[$i] = 0;
         for ($i = 0; $i < 4096; $i++) $c_table[$i] = $c;
@@ -253,8 +253,8 @@ function read_c_len() {
             }
             fillbuf($pt_len[$c]);
             if ($c <= 2) {
-                if      ($c == 0) $c = 1;
-                else if ($c == 1) $c = getbits(4) + 3;
+                if      ($c === 0) $c = 1;
+                else if ($c === 1) $c = getbits(4) + 3;
                 else             $c = getbits(CBIT) + 20;
                 while (--$c >= 0) $c_len[$i++] = 0;
             } else $c_len[$i++] = $c - 2;
@@ -269,7 +269,7 @@ function decode_c() {
     Global $blocksize,$c_table;
     $j = 0;
     $mask = 0;
-    if ($blocksize == 0) {
+    if ($blocksize === 0) {
         $blocksize = getbits(16);
         read_pt_len(NT, TBIT, 3);
         read_c_len();
@@ -301,7 +301,7 @@ function decode_p() {
         } while ($j >= NP);
     }
     fillbuf($pt_len[$j]);
-    if ($j != 0) $j = (1 << ($j - 1)) + getbits($j - 1);
+    if ($j !== 0) $j = (1 << ($j - 1)) + getbits($j - 1);
     return $j;
 }
 
@@ -323,21 +323,21 @@ function decode($count,$buffer){
     while (--$j >= 0){
         $buffer[$r] = $buffer[$i];
         $i = ($i + 1) & (DICSIZ - 1);
-        if (++$r == $count) return;
+        if (++$r === $count) return;
     }
     for ( ; ; ) {
         $c = decode_c();
 
         if ($c <= UCHAR_MAX) {
             $buffer[$r] = chr($c);
-            if (++$r == $count) return;
+            if (++$r === $count) return;
         } else {
             $j = $c - (UCHAR_MAX + 1 - THRESHOLD);
             $i = ($r - decode_p() - 1) & (DICSIZ - 1);
             while (--$j >= 0) {
                 $buffer[$r] = $buffer[$i];
                 $i = ($i + 1) & (DICSIZ - 1);
-                if (++$r == $count) return;
+                if (++$r === $count) return;
             }
         }
     }

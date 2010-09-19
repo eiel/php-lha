@@ -111,7 +111,19 @@ function getbits($n) {
     global $bitbuf;
     if($n === 0) {return 0;}
     $x = logic_shift($bitbuf, BITBUFSIZ - $n);
-    fillbuf($n);
+    global $bitcount,$compsize,$subbitbuf,$arcfile;
+    $bitbuf = ($bitbuf << $n) & 0xFFFFFFFF;
+
+    while ($n > $bitcount) {
+        $bitbuf |= ($subbitbuf << ($n -= $bitcount)) & 0xFFFFFFFF;
+
+        if ($compsize !== 0) {
+            $compsize--;  $subbitbuf = ord(fgetc($arcfile));
+        } else $subbitbuf = 0;
+        $bitcount = CHAR_BIT;
+    }
+    $bitbuf |= logic_shift($subbitbuf, $bitcount -= $n);
+//    fillbuf($n);
     return $x;
 }
 
@@ -285,7 +297,22 @@ function decode_c() {
             $mask = logic_shift($mask,1);
         } while ($j >= NC);
     }
-    fillbuf($c_len[$j]);
+    // inline fillbuf
+    $n = $c_len[$j];
+    global $bitcount,$compsize,$subbitbuf,$arcfile;
+    $bitbuf = ($bitbuf << $n) & 0xFFFFFFFF;
+
+    while ($n > $bitcount) {
+        $bitbuf |= ($subbitbuf << ($n -= $bitcount)) & 0xFFFFFFFF;
+
+        if ($compsize !== 0) {
+            $compsize--;  $subbitbuf = ord(fgetc($arcfile));
+        } else $subbitbuf = 0;
+        $bitcount = CHAR_BIT;
+    }
+    $bitbuf |= logic_shift($subbitbuf, $bitcount -= $n);
+
+//    fillbuf($c_len[$j]);
     return $j;
 }
 
@@ -300,7 +327,22 @@ function decode_p() {
             $mask = logic_shift($mask, 1);
         } while ($j >= NP);
     }
-    fillbuf($pt_len[$j]);
+    // inline fillbuf
+    $n = $pt_len[$j];
+    global $bitcount,$compsize,$subbitbuf,$arcfile;
+    $bitbuf = ($bitbuf << $n) & 0xFFFFFFFF;
+
+    while ($n > $bitcount) {
+        $bitbuf |= ($subbitbuf << ($n -= $bitcount)) & 0xFFFFFFFF;
+
+        if ($compsize !== 0) {
+            $compsize--;  $subbitbuf = ord(fgetc($arcfile));
+        } else $subbitbuf = 0;
+        $bitcount = CHAR_BIT;
+    }
+    $bitbuf |= logic_shift($subbitbuf, $bitcount -= $n);
+
+//    fillbuf($pt_len[$j]);
     if ($j !== 0) $j = (1 << ($j - 1)) + getbits($j - 1);
     return $j;
 }

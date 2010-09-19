@@ -1,35 +1,35 @@
 <?php
 /* limits.h */
-$CHAR_BIT = 8;
-$UCHAR_MAX = 255;
-$ULONG_MAX = 4294967295;
+define("CHAR_BIT",8);
+define("UCHAR_MAX",255);
+define("ULONG_MAX",4294967295);
 
 /* io.c */
-$INIT_CRC = 0;
-$BITBUFSIZ = $CHAR_BIT * 4;
+define("INIT_CRC",0);
+define("BITBUFSIZ",CHAR_BIT*4);
 
 /* decode.c */
-$DICBIT = 13;    /* 12(-lh4-) or 13(-lh5-) */
-$DICSIZ = 1 << $DICBIT;
-$MAXMATCH = 256; /* formerly F (not more than UCHAR_MAX + 1) */
-$THRESHOLD = 3;  /* choose optimal value */
+define("DICBIT",13);    /* 12(-lh4-) or 13(-lh5-) */
+define("DICSIZ",1 << DICBIT);
+define("MAXMATCH",256); /* formerly F (not more than UCHAR_MAX + 1) */
+define("THRESHOLD",3);  /* choose optimal value */
 
 /* alphabet = {0, 1, 2, ..., NC - 1} */
-$CBIT = 9;  /* $\lfloor \log_2 NC \rfloor + 1$ */
-$CODE_BIT = 16;  /* codeword length */
+define("CBIT",9);  /* $\lfloor \log_2 NC \rfloor + 1$ */
+define("CODE_BIT",16);  /* codeword length */
 
 /* huf.c */
-$NC = ($UCHAR_MAX + $MAXMATCH + 2 - $THRESHOLD);
+define("NC",UCHAR_MAX + MAXMATCH + 2 - THRESHOLD);
 
-$NP = ($DICBIT + 1);
-$NT = ($CODE_BIT +3);
-if ($NT > $NP){
-    $NPT = $NT;
+define("NP",DICBIT + 1);
+define("NT",CODE_BIT +3);
+if (NT > NP){
+    define("NPT",NT);
 } else {
-    $NPT = $NP;
+    define("NPT",NP);
 }
-$PBIT = 4;
-$TBIT = 5;
+define("PBIT",4);
+define("TBIT",5);
 
 /* huf.c */
 $left = array();
@@ -60,7 +60,6 @@ $compsize = 0;
 function  lha_extract($lha){
     global $outfile,$arcfile,$compsize;
     global $buffer,$is_tofile;
-    global $DICSIZ;
     $outfile = fopen($lha->header->filename,"wb");
     $arcfile = fopen($lha->file_path,"rb");
     fseek($arcfile,$lha->header->headersize+2);
@@ -75,7 +74,7 @@ function  lha_extract($lha){
     } else {
         if ($lha->header->method != '-lh0-') decode_start();
         while ($origsize != 0) {
-            $n = ($origsize > $DICSIZ) ? $DICSIZ : $origsize;
+            $n = ($origsize > DICSIZ) ? DICSIZ : $origsize;
             if ($lha->header->method != '-lh0-') {
                 decode($n, $buffer);
             } else {
@@ -94,7 +93,7 @@ function  lha_extract($lha){
 }
 
 function fillbuf($n){
-    global $bitbuf,$bitcount,$compsize,$CHAR_BIT,$subbitbuf,$arcfile;
+    global $bitbuf,$bitcount,$compsize,$subbitbuf,$arcfile;
     $bitbuf = ($bitbuf << $n) & 0xFFFFFFFF;
 
     while ($n > $bitcount) {
@@ -103,15 +102,15 @@ function fillbuf($n){
         if ($compsize != 0) {
             $compsize--;  $subbitbuf = ord(fgetc($arcfile));
         } else $subbitbuf = 0;
-        $bitcount = $CHAR_BIT;
+        $bitcount = CHAR_BIT;
     }
     $bitbuf |= logic_shift($subbitbuf, $bitcount -= $n);
 }
 
 function getbits($n) {
-    global $bitbuf,$BITBUFSIZ;
-    if($n == 0) return 0;
-    $x = logic_shift($bitbuf, $BITBUFSIZ - $n);
+    global $bitbuf;
+    if($n == 0) {return 0;}
+    $x = logic_shift($bitbuf, BITBUFSIZ - $n);
     fillbuf($n);
     return $x;
 }
@@ -122,11 +121,11 @@ function fwrite_crc($p, $n, $f) {
 }
 
 function init_getbits() {
-    global $bitbuf,$subbitbuf,$bitcount,$BITBUFSIZ;
+    global $bitbuf,$subbitbuf,$bitcount;
     $bitbuf = 0;
     $subbitbuf = 0;
     $bitcount = 0;
-    fillbuf($BITBUFSIZ);
+    fillbuf(BITBUFSIZ);
 }
 
 
@@ -194,7 +193,7 @@ function make_table($nchar, $bitlen, $tablebits,$table) {
 }
 
 function read_pt_len($nn, $nbit, $i_special) {
-    global $pt_len,$pt_table,$BITBUFSIZ,$bitbuf;
+    global $pt_len,$pt_table,$bitbuf;
     $i = 0;
     $c = 0;
     $n = 0;
@@ -208,9 +207,9 @@ function read_pt_len($nn, $nbit, $i_special) {
     } else {
         $i = 0;
         while ($i < $n) {
-            $c = logic_shift($bitbuf,$BITBUFSIZ - 3);
+            $c = logic_shift($bitbuf,BITBUFSIZ - 3);
             if ($c == 7) {
-                $mask = 1 << ($BITBUFSIZ - 1 - 3);
+                $mask = 1 << (BITBUFSIZ - 1 - 3);
                 while ($mask & $bitbuf) {
                     $mask = logic_shift($mask,1);
                     $c++;
@@ -229,78 +228,77 @@ function read_pt_len($nn, $nbit, $i_special) {
 }
 
 function read_c_len() {
-    global $BITBUFSIZ,$TBIT,$CBIT,$NT,$NC;
     global $left,$right,$bitbuf,$pt_len,$pt_table,$c_len,$c_table;
     $i = 0;
     $c = 0;
     $n = 0;
     $mask = 0;
 
-    $n = getbits($CBIT);
+    $n = getbits(CBIT);
     if ($n == 0) {
-        $c = getbits($CBIT);
-        for ($i = 0; $i < $NC; $i++) $c_len[$i] = 0;
+        $c = getbits(CBIT);
+        for ($i = 0; $i < NC; $i++) $c_len[$i] = 0;
         for ($i = 0; $i < 4096; $i++) $c_table[$i] = $c;
     } else {
         $i = 0;
         while ($i < $n) {
-            $c = $pt_table[logic_shift($bitbuf,$BITBUFSIZ - 8)];
-            if ($c >= $NT) {
-                $mask = 1 << ($BITBUFSIZ - 1 - 8);
+            $c = $pt_table[logic_shift($bitbuf,BITBUFSIZ - 8)];
+            if ($c >= NT) {
+                $mask = 1 << (BITBUFSIZ - 1 - 8);
                 do {
                     if ($bitbuf & $mask) $c = $right[$c];
                     else               $c = $left[$c];
                     $mask = logic_shift($mask,1);
-                } while ($c >= $NT);
+                } while ($c >= NT);
             }
             fillbuf($pt_len[$c]);
             if ($c <= 2) {
                 if      ($c == 0) $c = 1;
                 else if ($c == 1) $c = getbits(4) + 3;
-                else             $c = getbits($CBIT) + 20;
+                else             $c = getbits(CBIT) + 20;
                 while (--$c >= 0) $c_len[$i++] = 0;
             } else $c_len[$i++] = $c - 2;
         }
-        while ($i < $NC) $c_len[$i++] = 0;
-        $c_table = make_table($NC, $c_len, 12, $c_table);
+        while ($i < NC) $c_len[$i++] = 0;
+        $c_table = make_table(NC, $c_len, 12, $c_table);
     }
 }
 
 function decode_c() {
-    global $c_len,$BITBUFSIZ,$bitbuf,$left,$right,$NC,$NT,$NP,$TBIT,$PBIT;
+    global $c_len,$bitbuf,$left,$right;
     Global $blocksize,$c_table;
     $j = 0;
     $mask = 0;
     if ($blocksize == 0) {
         $blocksize = getbits(16);
-        read_pt_len($NT, $TBIT, 3);
+        read_pt_len(NT, TBIT, 3);
         read_c_len();
-        read_pt_len($NP, $PBIT, -1);
+        read_pt_len(NP, PBIT, -1);
     }
     $blocksize--;
-    $j = $c_table[logic_shift($bitbuf, $BITBUFSIZ - 12)];
-    if ($j >= $NC) {
-        $mask = 1 << ($BITBUFSIZ - 1 - 12);
+    $j = $c_table[logic_shift($bitbuf, BITBUFSIZ - 12)];
+    if ($j >= NC) {
+        $mask = 1 << (BITBUFSIZ - 1 - 12);
         do {
             if ($bitbuf & $mask) $j = $right[$j];
             else               $j = $left [$j];
             $mask = logic_shift($mask,1);
-        } while ($j >= $NC);
+        } while ($j >= NC);
     }
     fillbuf($c_len[$j]);
     return $j;
 }
 
 function decode_p() {
-    global $pt_table,$pt_len,$bitbuf,$BITBUFSIZ,$right,$left,$NP;
-    $j = $pt_table[logic_shift($bitbuf,$BITBUFSIZ - 8)];
-    if ($j >= $NP) {
-        $mask = 1 << ($BITBUFSIZ - 1 - 8);
+    global $pt_table,$pt_len,$bitbuf,$right,$left;
+    $j = $pt_table[logic_shift($bitbuf, BITBUFSIZ - 8)];
+    if ($j >= NP) {
+        $mask = 1 << (BITBUFSIZ - 1 - 8);
         do {
             if ($bitbuf & $mask) $j = $right[$j];
             else               $j = $left [$j];
             $mask = logic_shift($mask, 1);
-        } while ($j >= $NP);
+        } while ($j >= NP);
     }
     fillbuf($pt_len[$j]);
     if ($j != 0) $j = (1 << ($j - 1)) + getbits($j - 1);
@@ -318,27 +316,27 @@ function decode_start(){
 }
 
 function decode($count,$buffer){
-    global $buffer,$UCHAR_MAX,$THRESHOLD,$DICSIZ,$j;
+    global $buffer,$j;
     static $i;
     $r = 0;
     $c = 0;
     while (--$j >= 0){
         $buffer[$r] = $buffer[$i];
-        $i = ($i + 1) & ($DICSIZ - 1);
+        $i = ($i + 1) & (DICSIZ - 1);
         if (++$r == $count) return;
     }
     for ( ; ; ) {
         $c = decode_c();
 
-        if ($c <= $UCHAR_MAX) {
+        if ($c <= UCHAR_MAX) {
             $buffer[$r] = chr($c);
             if (++$r == $count) return;
         } else {
-            $j = $c - ($UCHAR_MAX + 1 - $THRESHOLD);
-            $i = ($r - decode_p() - 1) & ($DICSIZ - 1);
+            $j = $c - (UCHAR_MAX + 1 - THRESHOLD);
+            $i = ($r - decode_p() - 1) & (DICSIZ - 1);
             while (--$j >= 0) {
                 $buffer[$r] = $buffer[$i];
-                $i = ($i + 1) & ($DICSIZ - 1);
+                $i = ($i + 1) & (DICSIZ - 1);
                 if (++$r == $count) return;
             }
         }
